@@ -6,3 +6,4 @@ export * from './ReportMarker';
 export * from './SelectedReportCard';
 export * from './MapControls';
 export * from './MapPlaceholder';
+export * from './MapViewContainer';

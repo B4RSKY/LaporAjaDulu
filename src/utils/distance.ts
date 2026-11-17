@@ -17,7 +17,8 @@ export function calculateHaversineDistance(start: GeoPoint, end: GeoPoint): numb
       Math.sin(deltaLonRad / 2) *
       Math.sin(deltaLonRad / 2);
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const safeA = Math.min(1, Math.max(0, a));
+  const c = 2 * Math.atan2(Math.sqrt(safeA), Math.sqrt(1 - safeA));
 
   return R * c;
 }

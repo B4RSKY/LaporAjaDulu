@@ -28,7 +28,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Aplikasi LaporAjaDulu membutuhkan akses lokasi untuk menampilkan laporan infrastruktur dan bencana di sekitar Anda."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "web": {
       "favicon": "./assets/favicon.png"

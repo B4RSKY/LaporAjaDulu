@@ -27,8 +27,8 @@ interface MapViewContainerProps {
 }
 
 const FALLBACK_REGION: Region = {
-  latitude: -6.200000,
-  longitude: 106.816666,
+  latitude: -7.966620,
+  longitude: 112.632629,
   latitudeDelta: 0.02,
   longitudeDelta: 0.02,
 };
@@ -82,7 +82,7 @@ export const MapViewContainer = forwardRef<MapViewContainerRef, MapViewContainer
           provider={PROVIDER_GOOGLE}
           style={styles.map}
           initialRegion={initialRegion}
-          showsUserLocation={true}
+          showsUserLocation={!!userLocation}
           showsMyLocationButton={false}
           showsCompass={false}
         >
