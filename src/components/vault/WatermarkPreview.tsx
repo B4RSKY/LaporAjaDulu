@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { colors, radius, shadows, spacing, touchTarget, typography } from '../../theme';
+import { colors, radius, shadows, spacing, typography } from '../../theme';
 import { PhotoWatermark } from '../../types/vault';
 
 export interface WatermarkPreviewProps {

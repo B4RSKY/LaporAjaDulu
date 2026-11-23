@@ -16,8 +16,8 @@ export function useLocationTracking() {
   const [permissionStatus, setPermissionStatus] = useState<PermissionStateStatus>('undetermined');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isTracking, setIsTracking] = useState(false);
+  const [distanceInterval, setDistanceInterval] = useState(10);
   const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
-  const intervalRef = useRef<number>(10);
   const setGlobalLocation = useAppStore((state) => state.setUserLocation);
 
   const publishLocation = useCallback((coords: Location.LocationObjectCoords, timestamp: number) => {
@@ -86,14 +86,14 @@ export function useLocationTracking() {
       const distanceInterval = current.coords.accuracy != null && current.coords.accuracy <= 10
         ? 5
         : current.coords.accuracy != null && current.coords.accuracy <= 30 ? 10 : 25;
-      intervalRef.current = distanceInterval;
+      setDistanceInterval(distanceInterval);
       subscriptionRef.current = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval },
         (next) => publishLocation(next.coords, next.timestamp)
       );
       setIsTracking(true);
       setErrorMsg(null);
-      recordAuditEvent(createAuditEvent('LOCATION_TRACKING_STARTED', { distanceIntervalMeters: intervalRef.current }));
+      recordAuditEvent(createAuditEvent('LOCATION_TRACKING_STARTED', { distanceIntervalMeters: distanceInterval }));
     } catch {
       setErrorMsg('Gagal mengambil data posisi GPS. Pastikan GPS aktif dan coba lagi.');
       setIsTracking(false);
@@ -101,12 +101,12 @@ export function useLocationTracking() {
   }, [checkPermission, publishLocation, requestPermission]);
 
   useEffect(() => {
-    void checkPermission();
+    void Promise.resolve().then(checkPermission);
     return () => {
       subscriptionRef.current?.remove();
       subscriptionRef.current = null;
     };
   }, [checkPermission]);
 
-  return { location, permissionStatus, errorMsg, isTracking, distanceInterval: intervalRef.current, requestPermission, startTracking, stopTracking, checkPermission };
+  return { location, permissionStatus, errorMsg, isTracking, distanceInterval, requestPermission, startTracking, stopTracking, checkPermission };
 }

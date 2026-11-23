@@ -1,26 +1,17 @@
-<<<<<<< HEAD
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-=======
-import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
->>>>>>> frontend-performance
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapControls, MapViewContainer, MapViewContainerRef, SelectedReportCard } from '../components/map';
 import { EmptyState, PermissionState } from '../components/ui';
+import { useLocationTracking } from '../hooks/useLocationTracking';
 import { mockReports } from '../mocks/mockReports';
+import { useAppStore } from '../store/useAppStore';
 import { colors, radius, shadows, spacing, touchTarget, typography } from '../theme';
 import { UIReport } from '../types/ui';
-<<<<<<< HEAD
-import { useLocationTracking } from '../hooks/useLocationTracking';
-import { calculateHaversineDistance, formatDistance } from '../utils/distance';
-import { useAppStore } from '../store/useAppStore';
-import { createAuditEvent, recordAuditEvent } from '../services/audit/activityAudit';
-=======
 import { ReportDraft } from '../types/vault';
+import { calculateHaversineDistance, formatDistance } from '../utils/distance';
 import { CreateReportModal } from './CreateReportModal';
 import { DocumentVaultModal } from './DocumentVaultModal';
->>>>>>> frontend-performance
 
 export interface MapScreenProps { reportsOverride?: UIReport[] }
 
@@ -28,17 +19,13 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
   const insets = useSafeAreaInsets();
   const [reports, setReports] = useState<UIReport[]>(reportsOverride ?? mockReports);
   const [isRefreshing, setIsRefreshing] = useState(false);
-<<<<<<< HEAD
-  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const mapRef = useRef<MapViewContainerRef>(null);
-  const selectedReportId = useAppStore((state) => state.selectedReportId);
-  const selectReport = useAppStore((state) => state.selectReport);
-  const { location, permissionStatus, errorMsg, isTracking, requestPermission, startTracking, stopTracking } = useLocationTracking();
-=======
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
-  const refreshTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
->>>>>>> frontend-performance
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mapRef = useRef<MapViewContainerRef>(null);
+  const { location, permissionStatus, errorMsg, isTracking, startTracking, stopTracking } = useLocationTracking();
+  const selectedReportId = useAppStore((state) => state.selectedReportId);
+  const selectReport = useAppStore((state) => state.selectReport);
 
   useEffect(() => () => { if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current); }, []);
   const reportsWithDistance = useMemo(() => reports.map((report) => ({
@@ -47,26 +34,21 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
       ? formatDistance(calculateHaversineDistance(location, { latitude: report.latitude, longitude: report.longitude }))
       : undefined,
   })), [reports, location]);
-  const selectedReportWithDistance = useMemo(
+  const selectedReport = useMemo(
     () => reportsWithDistance.find((item) => item.id === selectedReportId) ?? null,
     [reportsWithDistance, selectedReportId]
   );
 
+  // Handler pemilihan marker (memoized untuk menjaga kestabilan props ReportMarker)
   const handleSelectReport = useCallback((report: { id: string }) => {
     const nextId = selectedReportId === report.id ? null : report.id;
     selectReport(nextId);
-    if (nextId) recordAuditEvent(createAuditEvent('REPORT_MARKER_SELECTED', { reportId: nextId }));
   }, [selectedReportId, selectReport]);
-
-  // Handler pemilihan marker (memoized untuk menjaga kestabilan props ReportMarker)
-  const handleSelectReport = useCallback((id: string) => {
-    setSelectedReportId((prev) => (prev === id ? null : id));
-  }, []);
 
   // Handler penutupan kartu laporan terpilih
   const handleCloseReport = useCallback(() => {
-    setSelectedReportId(null);
-  }, []);
+    selectReport(null);
+  }, [selectReport]);
 
   // Handler penerbitan laporan baru (Milestone 2)
   const handleCreateReport = useCallback((draft: ReportDraft) => {
@@ -83,8 +65,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
     };
 
     setReports((prev) => [newReport, ...prev]);
-    setSelectedReportId(newReport.id);
-  }, []);
+    selectReport(newReport.id);
+  }, [selectReport]);
 
   // Handler simulasi refresh laporan (demo sandbox dengan timer cleanup)
   const handleRefreshReports = useCallback(() => {
@@ -134,9 +116,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
           <View style={styles.controlsOverlay}>
             <MapControls isTrackingActive={isTracking && !!location} isLoadingLocation={isRefreshing} onRecenterPress={handleRecenter} onRefreshPress={handleRefreshReports} />
           </View>
-<<<<<<< HEAD
-          {selectedReportWithDistance && (
-=======
 
           {/* Floating Action Buttons: Buat Laporan & Buka Vault (Milestone 2) */}
           <View style={styles.fabButtonGroup}>
@@ -169,9 +148,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
 
           {/* Floating Selected Report Summary Card */}
           {selectedReport && (
->>>>>>> frontend-performance
             <View style={styles.selectedCardOverlay}>
-              <SelectedReportCard report={selectedReportWithDistance} onClose={() => selectReport(null)} />
+              <SelectedReportCard report={selectedReport} onClose={handleCloseReport} />
             </View>
           )}
           {permissionStatus !== 'granted' && (
@@ -204,27 +182,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
 };
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { ...shadows.neuFlat, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, backgroundColor: colors.surfaceElevated, borderBottomWidth: 1, borderBottomColor: colors.borderSubtle, zIndex: 10 },
-  headerTextGroup: { flex: 1 },
-  appName: { ...typography.screenTitle, color: colors.primaryDark, letterSpacing: 0.3 },
-  appTagline: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
-  badgeSDG: { backgroundColor: colors.primaryLight, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.borderSubtle },
-  badgeSDGText: { ...typography.badge, color: colors.primary, fontSize: 10 },
-  mapArea: { flex: 1, position: 'relative' },
-  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
-  controlsOverlay: { position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 5 },
-  selectedCardOverlay: { position: 'absolute', bottom: spacing.md, left: spacing.md, right: spacing.md, zIndex: 6 },
-  permissionOverlay: { position: 'absolute', left: spacing.md, right: spacing.md, bottom: spacing.xl, zIndex: 7 },
-  errorBanner: { position: 'absolute', top: spacing.md, left: spacing.md, right: 76, padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.warningBackground, zIndex: 8 },
-  errorText: { ...typography.caption, color: colors.warningText },
-  startTracking: { position: 'absolute', bottom: spacing.md, alignSelf: 'center', padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceElevated, zIndex: 6 },
-  startTrackingText: { ...typography.body, color: colors.primary, fontWeight: '600' },
-  locationBadge: { position: 'absolute', top: spacing.md, left: spacing.md, padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.surfaceElevated, zIndex: 5 },
-  locationBadgeText: { ...typography.caption, color: colors.textPrimary },
-  stopText: { ...typography.caption, color: colors.danger, marginTop: 3, fontWeight: '600' },
-=======
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -295,6 +252,64 @@ const styles = StyleSheet.create({
     right: spacing.md,
     zIndex: 6,
   },
+  permissionOverlay: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.xl,
+    zIndex: 7,
+  },
+  errorBanner: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    top: spacing.md,
+    zIndex: 8,
+    backgroundColor: colors.dangerBackground,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.dangerText,
+  },
+  startTracking: {
+    position: 'absolute',
+    left: spacing.md,
+    bottom: spacing.md,
+    zIndex: 8,
+  },
+  startTrackingText: {
+    ...typography.caption,
+    color: colors.primaryDark,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.round,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  locationBadge: {
+    position: 'absolute',
+    left: spacing.md,
+    bottom: spacing.md,
+    zIndex: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.round,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  locationBadgeText: {
+    ...typography.caption,
+    color: colors.textPrimary,
+  },
+  stopText: {
+    ...typography.caption,
+    color: colors.dangerText,
+    fontWeight: '700',
+  },
   fabButtonGroup: {
     position: 'absolute',
     bottom: spacing.lg,
@@ -341,5 +356,4 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     transform: [{ scale: 0.96 }],
   },
->>>>>>> frontend-performance
 });

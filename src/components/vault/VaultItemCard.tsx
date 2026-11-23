@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, shadows, spacing, touchTarget, typography } from '../../theme';
+import { colors, radius, spacing, touchTarget, typography } from '../../theme';
 import { VaultItem } from '../../types/vault';
 import { NeuCard } from '../ui/NeuCard';
 
