@@ -1,11 +1,14 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapControls, MapPlaceholder, ReportMarker, SelectedReportCard } from '../components/map';
 import { EmptyState } from '../components/ui';
 import { mockReports } from '../mocks/mockReports';
-import { colors, radius, shadows, spacing, typography } from '../theme';
+import { colors, radius, shadows, spacing, touchTarget, typography } from '../theme';
 import { UIReport } from '../types/ui';
+import { ReportDraft } from '../types/vault';
+import { CreateReportModal } from './CreateReportModal';
+import { DocumentVaultModal } from './DocumentVaultModal';
 
 export interface MapScreenProps {
   reportsOverride?: UIReport[];
@@ -43,6 +46,8 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
   const [reports, setReports] = useState<UIReport[]>(reportsOverride ?? mockReports);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
   const refreshTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Pembersihan timer saat unmount untuk mencegah memory leak
@@ -67,6 +72,24 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
   // Handler penutupan kartu laporan terpilih
   const handleCloseReport = useCallback(() => {
     setSelectedReportId(null);
+  }, []);
+
+  // Handler penerbitan laporan baru (Milestone 2)
+  const handleCreateReport = useCallback((draft: ReportDraft) => {
+    const newReport: UIReport = {
+      id: `rep-user-${Date.now()}`,
+      title: draft.title,
+      description: draft.description || 'Laporan baru dari warga sekitar lokasi.',
+      category: draft.category,
+      urgency: draft.urgency,
+      latitude: draft.watermark?.latitude ?? -7.9600,
+      longitude: draft.watermark?.longitude ?? 112.6300,
+      createdAtFormatted: 'Baru Saja',
+      distanceFormatted: 'Lokasi Anda',
+    };
+
+    setReports((prev) => [newReport, ...prev]);
+    setSelectedReportId(newReport.id);
   }, []);
 
   // Handler simulasi refresh laporan (demo sandbox dengan timer cleanup)
@@ -151,6 +174,35 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
             />
           </View>
 
+          {/* Floating Action Buttons: Buat Laporan & Buka Vault (Milestone 2) */}
+          <View style={styles.fabButtonGroup}>
+            <Pressable
+              onPress={() => setIsVaultModalOpen(true)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Buka arsip Document Vault"
+              style={({ pressed }) => [
+                styles.vaultButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.vaultButtonText}>📁 Vault</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setIsCreateModalOpen(true)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Buat laporan warga baru"
+              style={({ pressed }) => [
+                styles.reportFab,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.reportFabText}>➕ Lapor</Text>
+            </Pressable>
+          </View>
+
           {/* Floating Selected Report Summary Card */}
           {selectedReport && (
             <View style={styles.selectedCardOverlay}>
@@ -162,6 +214,19 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
           )}
         </View>
       )}
+
+      {/* Modal Formulir Laporan Baru */}
+      <CreateReportModal
+        visible={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmitReport={handleCreateReport}
+      />
+
+      {/* Modal Galeri Dokumen Scoped Storage */}
+      <DocumentVaultModal
+        visible={isVaultModalOpen}
+        onClose={() => setIsVaultModalOpen(false)}
+      />
     </View>
   );
 };
@@ -236,5 +301,51 @@ const styles = StyleSheet.create({
     left: spacing.md,
     right: spacing.md,
     zIndex: 6,
+  },
+  fabButtonGroup: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    right: spacing.lg,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    zIndex: 5,
+  },
+  vaultButton: {
+    ...shadows.neuRaised,
+    backgroundColor: colors.surfaceElevated,
+    minHeight: touchTarget.minHeight,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.round,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.borderSubtle,
+  },
+  vaultButtonText: {
+    ...typography.caption,
+    color: colors.primaryDark,
+    fontWeight: '700',
+  },
+  reportFab: {
+    backgroundColor: colors.primary,
+    minHeight: touchTarget.minHeight,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.round,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+  },
+  reportFabText: {
+    ...typography.sectionTitle,
+    color: colors.textInverse,
+    fontSize: 14,
+  },
+  buttonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.96 }],
   },
 });
