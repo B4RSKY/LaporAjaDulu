@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryPicker } from '../components/form/CategoryPicker';
 import { FormInput } from '../components/form/FormInput';
 import { WatermarkPreview } from '../components/vault/WatermarkPreview';
+import { useEvidenceCapture } from '../hooks/useEvidenceCapture';
 import { colors, radius, shadows, spacing, touchTarget, typography } from '../theme';
 import { ReportCategory } from '../types/ui';
 import { PhotoWatermark, ReportDraft } from '../types/vault';
@@ -23,10 +24,6 @@ export interface CreateReportModalProps {
   onSubmitReport: (draft: ReportDraft) => void;
 }
 
-/**
- * CreateReportModal — Modal Form Pembuatan Laporan Warga (Milestone 2)
- * Mengintegrasikan pengambilan foto dengan watermark koordinat & waktu otomatis.
- */
 export const CreateReportModal: React.FC<CreateReportModalProps> = ({
   visible,
   onClose,
@@ -39,30 +36,14 @@ export const CreateReportModal: React.FC<CreateReportModalProps> = ({
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [watermark, setWatermark] = useState<PhotoWatermark | null>(null);
   const [titleError, setTitleError] = useState('');
+  const { captureEvidence, captureError } = useEvidenceCapture();
 
-  // Simulasi pengambilan foto kamera dengan watermark otomatis (SDG 11)
-  const handleSimulateCapturePhoto = () => {
-    // Simulasi gambar bukti lapangan
-    const simulatedUri =
-      'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=80';
-    
-    // Watermark otomatis berdasarkan posisi saat ini
-    const simulatedWatermark: PhotoWatermark = {
-      latitude: -7.9568,
-      longitude: 112.6145,
-      timestampFormatted: new Date().toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }) + ' WIB',
-      locationLabel: 'Klojen, Kota Malang (GPS Verified)',
-    };
-
-    setPhotoUri(simulatedUri);
-    setWatermark(simulatedWatermark);
+  const handleCapturePhoto = async () => {
+    const result = await captureEvidence();
+    if (result) {
+      setPhotoUri(result.photoUri);
+      setWatermark(result.watermark);
+    }
   };
 
   const handleRemovePhoto = () => {
@@ -86,7 +67,6 @@ export const CreateReportModal: React.FC<CreateReportModalProps> = ({
       watermark,
     });
 
-    // Reset form
     setTitle('');
     setDescription('');
     setPhotoUri(null);
@@ -97,7 +77,6 @@ export const CreateReportModal: React.FC<CreateReportModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
       <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        {/* Header Modal */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Buat Laporan Baru</Text>
           <Pressable
@@ -116,7 +95,6 @@ export const CreateReportModal: React.FC<CreateReportModalProps> = ({
           style={styles.keyboardView}
         >
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            {/* Input Judul Laporan */}
             <FormInput
               label="Judul Laporan / Kejadian *"
               placeholder="Contoh: Jalan Ambles di Simpang Lima"
@@ -128,10 +106,8 @@ export const CreateReportModal: React.FC<CreateReportModalProps> = ({
               error={titleError}
             />
 
-            {/* Pilihan Kategori Bencana/Infrastruktur */}
             <CategoryPicker selectedCategory={category} onSelectCategory={setCategory} />
 
-            {/* Input Deskripsi Rinci */}
             <FormInput
               label="Deskripsi Kejadian"
               placeholder="Jelaskan kondisi di lokasi, tingkat bahaya, dan dampaknya bagi warga sekitar..."
@@ -142,15 +118,19 @@ export const CreateReportModal: React.FC<CreateReportModalProps> = ({
               style={styles.textArea}
             />
 
-            {/* Area Pratinjau Foto Bukti Lapangan & Watermark */}
             <WatermarkPreview
               photoUri={photoUri}
               watermark={watermark}
-              onCapturePress={handleSimulateCapturePhoto}
+              onCapturePress={() => void handleCapturePhoto()}
               onRemovePhoto={handleRemovePhoto}
             />
 
-            {/* Tombol Simpan & Kirim Laporan */}
+            {captureError ? (
+              <View style={styles.captureErrorBanner}>
+                <Text style={styles.captureErrorText}>{captureError}</Text>
+              </View>
+            ) : null}
+
             <Pressable
               onPress={handleSubmit}
               accessible={true}
@@ -210,6 +190,17 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 80,
     textAlignVertical: 'top',
+  },
+  captureErrorBanner: {
+    backgroundColor: colors.dangerBackground,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  captureErrorText: {
+    ...typography.caption,
+    color: colors.dangerText,
   },
   submitButton: {
     backgroundColor: colors.primary,

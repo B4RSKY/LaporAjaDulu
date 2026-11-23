@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapControls, MapViewContainer, MapViewContainerRef, SelectedReportCard } from '../components/map';
 import { EmptyState, PermissionState } from '../components/ui';
+import { useDocumentVault } from '../hooks/useDocumentVault';
 import { useLocationTracking } from '../hooks/useLocationTracking';
 import { mockReports } from '../mocks/mockReports';
 import { useAppStore } from '../store/useAppStore';
@@ -24,6 +25,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapRef = useRef<MapViewContainerRef>(null);
   const { location, permissionStatus, errorMsg, isTracking, startTracking, stopTracking } = useLocationTracking();
+  const { vaultItems, totalSizeFormatted, saveDraftToVault } = useDocumentVault();
   const selectedReportId = useAppStore((state) => state.selectedReportId);
   const selectReport = useAppStore((state) => state.selectReport);
 
@@ -39,36 +41,40 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
     [reportsWithDistance, selectedReportId]
   );
 
-  // Handler pemilihan marker (memoized untuk menjaga kestabilan props ReportMarker)
   const handleSelectReport = useCallback((report: { id: string }) => {
     const nextId = selectedReportId === report.id ? null : report.id;
     selectReport(nextId);
   }, [selectedReportId, selectReport]);
 
-  // Handler penutupan kartu laporan terpilih
   const handleCloseReport = useCallback(() => {
     selectReport(null);
   }, [selectReport]);
 
-  // Handler penerbitan laporan baru (Milestone 2)
   const handleCreateReport = useCallback((draft: ReportDraft) => {
+    const reportLat = draft.watermark?.latitude ?? location?.latitude ?? -7.9600;
+    const reportLng = draft.watermark?.longitude ?? location?.longitude ?? 112.6300;
+
     const newReport: UIReport = {
       id: `rep-user-${Date.now()}`,
       title: draft.title,
       description: draft.description || 'Laporan baru dari warga sekitar lokasi.',
       category: draft.category,
       urgency: draft.urgency,
-      latitude: draft.watermark?.latitude ?? -7.9600,
-      longitude: draft.watermark?.longitude ?? 112.6300,
+      latitude: reportLat,
+      longitude: reportLng,
       createdAtFormatted: 'Baru Saja',
       distanceFormatted: 'Lokasi Anda',
     };
 
+    if (draft.photoUri && draft.watermark) {
+      void saveDraftToVault(draft);
+    }
+
     setReports((prev) => [newReport, ...prev]);
     selectReport(newReport.id);
-  }, [selectReport]);
+    mapRef.current?.animateToCoordinate(reportLat, reportLng);
+  }, [location, saveDraftToVault, selectReport]);
 
-  // Handler simulasi refresh laporan (demo sandbox dengan timer cleanup)
   const handleRefreshReports = useCallback(() => {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     setIsRefreshing(true);
@@ -117,7 +123,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
             <MapControls isTrackingActive={isTracking && !!location} isLoadingLocation={isRefreshing} onRecenterPress={handleRecenter} onRefreshPress={handleRefreshReports} />
           </View>
 
-          {/* Floating Action Buttons: Buat Laporan & Buka Vault (Milestone 2) */}
           <View style={styles.fabButtonGroup}>
             <Pressable
               onPress={() => setIsVaultModalOpen(true)}
@@ -129,7 +134,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
                 pressed && styles.buttonPressed,
               ]}
             >
-              <Text style={styles.vaultButtonText}>📁 Vault</Text>
+              <Text style={styles.vaultButtonText}>📁 Vault ({vaultItems.length})</Text>
             </Pressable>
 
             <Pressable
@@ -146,7 +151,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
             </Pressable>
           </View>
 
-          {/* Floating Selected Report Summary Card */}
           {selectedReport && (
             <View style={styles.selectedCardOverlay}>
               <SelectedReportCard report={selectedReport} onClose={handleCloseReport} />
@@ -165,17 +169,17 @@ export const MapScreen: React.FC<MapScreenProps> = ({ reportsOverride }) => {
         </View>
       )}
 
-      {/* Modal Formulir Laporan Baru */}
       <CreateReportModal
         visible={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmitReport={handleCreateReport}
       />
 
-      {/* Modal Galeri Dokumen Scoped Storage */}
       <DocumentVaultModal
         visible={isVaultModalOpen}
         onClose={() => setIsVaultModalOpen(false)}
+        vaultItems={vaultItems}
+        totalSizeFormatted={totalSizeFormatted}
       />
     </View>
   );
@@ -236,7 +240,7 @@ const styles = StyleSheet.create({
   },
   markerPositionWrapper: {
     position: 'absolute',
-    transform: [{ translateX: -24 }, { translateY: -40 }], // Offset tengah pin pointer
+    transform: [{ translateX: -24 }, { translateY: -40 }],
     zIndex: 2,
   },
   controlsOverlay: {

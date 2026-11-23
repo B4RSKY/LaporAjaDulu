@@ -1,5 +1,14 @@
-/** Minimal privacy-aware activity audit protocol. Never log passwords, tokens, or precise GPS. */
-export type AuditAction = 'LOCATION_PERMISSION_GRANTED' | 'LOCATION_PERMISSION_DENIED' | 'LOCATION_TRACKING_STARTED' | 'LOCATION_TRACKING_STOPPED' | 'REPORT_MARKER_SELECTED';
+export type AuditAction =
+  | 'LOCATION_PERMISSION_GRANTED'
+  | 'LOCATION_PERMISSION_DENIED'
+  | 'LOCATION_TRACKING_STARTED'
+  | 'LOCATION_TRACKING_STOPPED'
+  | 'REPORT_MARKER_SELECTED'
+  | 'CAMERA_PERMISSION_GRANTED'
+  | 'CAMERA_PERMISSION_DENIED'
+  | 'EVIDENCE_PHOTO_CAPTURED'
+  | 'VAULT_DOCUMENT_SAVED'
+  | 'VAULT_DOCUMENT_DELETED';
 
 export interface AuditEvent {
   action: AuditAction;
@@ -16,7 +25,6 @@ export function createAuditEvent(
   return { action, occurredAt: new Date().toISOString(), actor, metadata };
 }
 
-/** Replace this sink with the approved backend logger when the API is available. */
 export function recordAuditEvent(event: AuditEvent): void {
   if (__DEV__) console.info('[AUDIT]', event);
 }

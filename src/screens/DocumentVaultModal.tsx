@@ -8,8 +8,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EmptyState } from '../components/ui';
 import { VaultItemCard } from '../components/vault/VaultItemCard';
-import { mockVaultItems } from '../mocks/mockVaultItems';
 import { colors, radius, shadows, spacing, touchTarget, typography } from '../theme';
 import { VaultItem } from '../types/vault';
 
@@ -17,28 +17,22 @@ export interface DocumentVaultModalProps {
   visible: boolean;
   onClose: () => void;
   vaultItems?: VaultItem[];
+  totalSizeFormatted?: string;
 }
 
-/**
- * DocumentVaultModal — Layar Galeri Dokumen Scoped Storage (Milestone 2)
- * Menyajikan daftar berkas arsip laporan dan foto bukti ter-watermark yang
- * tersimpan di sandbox aplikasi secara terenkripsi / offline-first.
- */
 export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
   visible,
   onClose,
-  vaultItems = mockVaultItems,
+  vaultItems = [],
+  totalSizeFormatted = '0 KB',
 }) => {
   const insets = useSafeAreaInsets();
 
-  const handleItemPress = (item: VaultItem) => {
-    // Pada pengembangan selanjutnya dapat membuka viewer gambar full-screen
-  };
+  const handleItemPress = (_item: VaultItem) => {};
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
       <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        {/* Header Modal */}
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>Document Vault</Text>
@@ -55,26 +49,31 @@ export const DocumentVaultModal: React.FC<DocumentVaultModalProps> = ({
           </Pressable>
         </View>
 
-        {/* Ringkasan Status Penyimpanan Lokal */}
         <View style={styles.storageSummaryBanner}>
           <Text style={styles.storageIcon}>🛡️</Text>
           <View style={styles.storageTextGroup}>
             <Text style={styles.storageTitle}>Penyimpanan Berkas Terisolasi</Text>
             <Text style={styles.storageSubtitle}>
-              {vaultItems.length} berkas bukti tersimpan di documentDirectory (Total ~5.3 MB)
+              {vaultItems.length} berkas bukti tersimpan di documentDirectory (Total {totalSizeFormatted})
             </Text>
           </View>
         </View>
 
-        {/* Daftar Berkas Arsip */}
-        <FlatList
-          data={vaultItems}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <VaultItemCard item={item} onPress={handleItemPress} />
-          )}
-          contentContainerStyle={styles.listContent}
-        />
+        {vaultItems.length === 0 ? (
+          <EmptyState
+            title="Vault Masih Kosong"
+            message="Foto bukti laporan yang Anda ambil akan otomatis tersimpan aman di Scoped Storage perangkat."
+          />
+        ) : (
+          <FlatList
+            data={vaultItems}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <VaultItemCard item={item} onPress={handleItemPress} />
+            )}
+            contentContainerStyle={styles.listContent}
+          />
+        )}
       </View>
     </Modal>
   );

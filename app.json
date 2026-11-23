@@ -19,7 +19,8 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
       ]
     },
     "plugins": [
@@ -27,6 +28,12 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Aplikasi LaporAjaDulu membutuhkan akses lokasi untuk menampilkan laporan infrastruktur dan bencana di sekitar Anda."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Aplikasi LaporAjaDulu membutuhkan akses kamera untuk mengambil foto bukti laporan lapangan."
         }
       ],
       "expo-secure-store"
